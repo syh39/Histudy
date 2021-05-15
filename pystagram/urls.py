@@ -64,6 +64,8 @@ urlpatterns = [
     url(r'^upload_files/(?P<path>.*)$', serve,{'document_root': settings.MEDIA_ROOT}),
     url(r'^static/(?P<path>.*)$', serve,{'document_root': settings.STATIC_ROOT}),
     url(r'^photos/(?P<pk>[0-9]+)/edit', data_edit, name='edit'),
+
+    path('recruit/', include('recruit.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

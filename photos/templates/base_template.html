@@ -36,8 +36,10 @@
 					<font color=white>
 						{% if request.user.is_authenticated %}
 						<p class="h4">{{ request.user.username }}</p>
+						<!-- <p class="h4">{{ request.user.last_name }} {{ request.user.first_name }}</p> -->
 						{% else %}
-						<p class="h4">Histudy</p>
+						<!-- <p class="h4">Histudy</p> -->
+						<p class="h4">Histudy_Test</p>
 						{% endif %}
 					</font>
 				</a>
