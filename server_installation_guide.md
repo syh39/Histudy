@@ -20,6 +20,7 @@ Use any possible PC: my test server is running on old laptop.
 ### Step 3. Histudy 프로젝트 초기 설정
 #### Step 3-1. `Google` 계정 로그인 설정하기
 #### Step 3-2. 현재 연도/학기 설정하기
+### ETC. 이외 확인하면 좋은 것들
 
 ---
 ---
@@ -61,6 +62,8 @@ sudo apt install python3-pip
 ```bash
 sudo pip3 install virtualenvwrapper
 ```
+
+#### `virtualenvwrapper`를 사용할 수 있게 설정하기
 
 다음, `virtualenvwrapper`을 사용할 수 있게, `.bashrc` 파일을 열어, 파일 최하단에 아래 내용을 추가해주어야 합니다.
 
@@ -129,8 +132,6 @@ pip3 install -r new_server_requirements.txt
 SECRET_BASE = '/home/<사용자 이름>/HisSecret'
 ```
 
-이런 방식이 싫다면 서버의 Histudy/pystagram/settings.py에서 하드코딩해도 됩니다.
-
 ---
 
 ### Step 1-4. `MySQL` 설치 및 구성/연동
@@ -143,6 +144,7 @@ sudo apt install mysql-server
 
 일단 설치 중에는 비밀번호를 요구하지 않습니다만, 혹여나 초기 설정이 돌아갈 때 비밀번호를 요구할 경우 `1-3`에서 `HisSecret/secret.json`에다 설정한 `DB_PASSWORD` 항목의 그것과 동일하게 입력해주시면 됩니다.
 
+#### `root` 비밀번호 변경
 
 그 다음, 기본값으로 설정되어 있는 root의 비밀번호를 바꾸기 위해서 `mysql`을 실행, 아래의 명령어를 입력하여 비밀번호를 변경해줍니다(안의 'DB_PASSWORD'는 `1-3`의 `DB_PASSWORD`와 동일합니다).
 
@@ -151,6 +153,8 @@ sudo mysql
 
 alter user 'root'@'localhost' identified with mysql_native_password by 'DB_PASSWORD';
 ```
+
+#### `default characterset` 변경
 
 root의 비밀번호 설정이 끝났다면, `MySQL`이 한글로 된 데이터를 저장할 수 있도록 `default character set`을 변경해줘야 합니다.
 
@@ -222,39 +226,21 @@ mysql> show tables;
 ## Step 2. Apache 설치 및 구성/연동
 ### Step 2-1. `Apache` 설치 및 구성/연동 프로젝트와 연결/연동
 
----
+#### `Apache` 설치
 
-### Step 2-2. `Let's Encrypt`, `Certbot` 설치 후 `https` 인증서 받기
+가상환경에서 우선 빠져나옵니다(`deactivate` 로 가능).
 
----
----
-
-## Step 3. Histudy 프로젝트 초기 설정
-### Step 3-1. `Google` 계정 로그인 설정하기
-
----
-
-### Step 3-2. 현재 연도/학기 설정하기
-
----
----
-
-
-### Step 4. Apache 설치 및 연동
-
-`deactivate` 로 가상환경에서 빠져나온다.
-
-**apache**와 wsgi 모듈인 libapache2-mod-wsgi, 파이썬 연결 모듈 libapache2-mod-wsgi-py3를 설치한다.
+그 다음, `apache`와 `apache`의 `wsgi`(python3 사용) 모듈인 `libapache2-mod-wsgi-py3`를 설치해 줍니다(`libapache2-mod-wsgi`는 `python2`를 사용하므로 `python3`를 사용하는 경우엔 설치하면 안 됩니다).
 
 ```bash
 sudo apt-get install apache2                  # apache2 설치
-sudo apt-get install libapache2-mod-wsgi      # wsgi 모듈
 sudo apt-get install libapache2-mod-wsgi-py3
 ```
 
-`sudo vim /etc/apache2/sites-available/000-default.conf` 를 통해서 파일을 열고 아래처럼 설정한다.
+#### `apache` 설정 #1
+`apache` 설치가 완료되었다면, `/etc/apache2/sites-available/000-default.conf`을 편집기로 열어 아래와 같이 수정해줍시다.
 
-- 설정 파일 가이드라인
+- `000-default.conf`:
 
 ```bash
 <VirtualHost *:80>
@@ -277,19 +263,19 @@ CustomLog ${APACHE_LOG_DIR}/access.log combined
 
 </Directory>
 
-Alias {settings.py에 STATIC_URL 변수 값} {settings.py에 STATIC_ROOT 디렉토리의 절대주소}
-<Directory {settings.py에 STATIC_ROOT 디렉토리의 절대주소}>
+Alias {settings.py 속 STATIC_URL 변수 값} {settings.py 속 STATIC_ROOT 디렉토리의 절대주소}
+<Directory {settings.py 속 STATIC_ROOT 디렉토리의 절대주소}>
         Require all granted
 </Directory>
 
-WSGIDaemonProcess tutor python-path={manage.py가 있는 디렉토리의 절대주소} python-home={이 프로젝트를 돌릴 때에 사용하는 virtual environment의 절대주소}
+WSGIDaemonProcess tutor python-path={manage.py가 있는 디렉토리의 절대주소} python-home={이 프로젝트를 돌릴 때에 사용하는 가상환경 - 이전에 django를 설치해 놓은 가상환경 - 의 절대주소}
 WSGIProcessGroup {프로젝트이름}
 WSGIScriptAlias / {wsgi.py가 있는 디렉토리의 주소/wsgi.py}
 
 </VirtualHost>
 ```
 
-히즈튜터에 맞는 설정
+- `000-default.conf`(Histudy에 맞는 설정):
 
 ```bash
 <VirtualHost *:80>
@@ -315,94 +301,100 @@ DocumentRoot /var/www/html
 ErrorLog ${APACHE_LOG_DIR}/error.log
 CustomLog ${APACHE_LOG_DIR}/access.log combined
 
-<Directory /home/g21300109/Histudy/pystagram>
+<Directory /home/<사용자 이름>/Histudy/pystagram>
 	<Files wsgi.py>
 		Require all granted
 	</Files>
 </Directory>
 
 # Static file(js, css 등등)이 들어있는 폴더에 Apache가 접근하게 함
-Alias /static /home/g21300109/Histudy/staticfiles
-<Directory /home/g21300109/Histudy/staticfiles>
+Alias /static /home/<사용자 이름>/Histudy/staticfiles
+<Directory /home/<사용자 이름>/Histudy/staticfiles>
         Require all granted
 </Directory>
 
-WSGIDaemonProcess histudy python-path=/home/g21300109/Histudy python-home=/home/g21300109/.virtualenvs/histudy
+WSGIDaemonProcess histudy python-path=/home/<사용자 이름>/Histudy python-home=/home/<사용자 이름>/.virtualenvs/histudy
 WSGIProcessGroup histudy
-WSGIScriptAlias / /home/g21300109/Histudy/pystagram/wsgi.py
+WSGIScriptAlias / /home/<사용자 이름>/Histudy/pystagram/wsgi.py
 
 </VirtualHost>
 ```
 
-이후 가상환경을 다시 작동한다.
-
-```bash
-source ~/.virtualenvs/{가상환경이름}/bin/activate
-```
-
-파이썬 모듈인 `uwsgi`를 설치한다.
+이후 가상환경을 다시 활성화하여, 파이썬 모듈 `uwsgi`를 `pip`을 통하여 설치해 줍니다.
 
 ```bash
 pip install uwsgi
 ```
 
-uwsgi 가 설치되지 않는다면 아래 블로그를 참고하자
+uwsgi 가 설치되지 않는다면 [pip3 install uwsgi 설치 에러 Failed building wheel for uwsgi](https://integer-ji.tistory.com/294) 링크의 블로그를 참고해 주세요.
 
-[pip3 install uwsgi 설치 에러 Failed building wheel for uwsgi](https://integer-ji.tistory.com/294)
+#### `apache` 설정 #2
 
-이제 django 사용 포트를 열어야 한다.
-
-먼저 ufw로 방화벽에서 해당 포트를 개방한다. iptables의 해당 포트를 개방한다. 마지막으로 서버를 실행시켜서 해당 포트가 열린 것을 확인한다.
+`django`에서 사용하는 포트가 있는데, 이걸 개방해줘야 합니다. 먼저 `ufw`로 방화벽에서 해당 포트를 개방하고, `iptables`로 해당 포트를 개방합니다. 마지막으로 테스트로 서버를 실행시켜서 해당 포트가 열린 것을 확인합니다.
 
 ```bash
-sudo ufw allow 8000 
+sudo ufw allow 8000
 
 sudo iptables -I INPUT -p tcp --dport 8000 -j ACCEPT
 
-python manage.py runserver 0.0.0.0:8000 
+python manage.py runserver 0.0.0.0:8000
 ```
 
-Server_IP_Address:8000으로 접속하면 Histudy가 떠야 정상이다.
+`<서버 IP 주소>:8000`으로 접속해서 Histudy 초기 화면이 떠야 합니다.
 
-`sudo vi /etc/apache2/ports.conf` 로 /etc/apache2/ports.conf 파이파일을 열고, 위에서 열게된 포트를 추가한다. Listen 80밑에 Listen 8000을 추가하면 된다.
+그 다음, `/etc/apache2/ports.conf` 파일을 열고, 위에서 열게된 포트 8000을 추가합시다. Listen 80밑에 Listen 8000을 추가하면 됩니다.
 
 ```bash
-#Listen 추가포트
 Listen 80
-Listen 8000
+Listen 8000 # newly added
 ```
 
-`sudo service apache2 restart` 로 Apache를 재시작한다.
+파일 수정이 완료되었다면, `apache` 서비스를 재시작해 줍시다.
+
+```bash
+sudo systemctl restart apache2 # sudo service apache2 restart도 가능
+```
 
 이제 `Server_Ip_Address:8000`으로 접속하면 histutor가 성공적으로 보이는 것을 볼 수 있다.
 
-### Step 5. Google Login을 위한 Social App 등록하기
+---
 
-[[Django] Google 계정으로 로그인하기 (로컬 서버 + 실제 서버)](https://dodormitory.tistory.com/9)
+### Step 2-2. `Let's Encrypt`, `Certbot` 설치 후 `https` 인증서 받기
 
-위 블로그 포스트를 참고하면 된다. Google OAuth를 사용해서 도메인 주소를 등록하고 Django에서 Google Social Application을 활성화한다. 
+외부에서의 접속을 위해 도메인을 구하셨으면 이 과정을 진행해주시면 됩니다.
 
-### Step 6. Let's Encrypt로 https 설정하기
+[Let's Encrypt를 사용하여 HTTPS 설정하기](https://dodormitory.tistory.com/11) 링크의 블로그 포스트를 참고해 주세요.
 
-[Let's Encrypt를 사용하여 HTTPS 설정하기](https://dodormitory.tistory.com/11)
+---
+---
 
-위 블로그 포스트를 참고하자.
+## Step 3. Histudy 프로젝트 초기 설정
+### Step 3-1. `Google` 계정 로그인 설정하기
 
-https설정을 마친 후 Step4의 블로그 포스트를 참고하여 https로 시작하는 도메인도 추가해줘야 한다.
+[[Django] Google 계정으로 로그인하기 (로컬 서버 + 실제 서버)](https://dodormitory.tistory.com/9) 링크의 블로그 포스트를 참고해 주세요.
 
-### Step 7. 현재 연도와 학기 설정하기
+`Google OAuth`에서 연결한 도메인 주소를 등록하고 `Django Admin` 사이트에서 `Google Social Application`을 활성화해줘야 합니다.
 
-Histudy를 사용하기 위해선 현재 연도와 학기를 설정해주어야 한다. 이를 위해선 관리자로 로그인할 필요가 있는데,관리자를 만드는 방법은 다음과 같다.
+---
+
+### Step 3-2. 현재 연도/학기 설정하기
+
+Histudy를 사용하기 위해선 현재 연도와 학기를 설정해주어야 합니다. 이를 위해선 관리자로 로그인할 필요가 있는데,
 
 ```bash
 cd ~/Histudy/ # manage.py가 있는 디렉토리로 이동
 python3 manage.py createsuperuser
 ```
 
-`https://{histudy ip address 또는 domain name}/admin` 으로 접속하면 관리자 페이지가 나온다. 
-관리자로 로그인 후, https://www.histudy.cafe24.com/set_current (이번 년도 & 학기 지정하기)로 가서 현재 년도와 학기를 지정해준다. 
+로 관리자를 만들어주세요. 이후 `https://{histudy ip address 또는 domain name}/admin` 으로 접속하면 관리자 페이지가 나옵니다.
+관리자로 로그인 후, `https://(histudy ip address 또는 domain name)/set_current (이번 년도 & 학기 지정하기)로 가서 현재 년도와 학기를 지정해줍시다.
 
-### 개발 팁
+---
+---
+
+### ETC. 이외 확인하면 좋은 것들
+
+#### 개발 팁
 **1. Super User 생성하기**
 
 장고의 관리자 계정을 생성하기 위해서는 
