@@ -20,7 +20,7 @@ from django.conf.urls.static import static
 from django.conf import settings
 
 from photos.views import detail, announce_write, announce_detail, confirm_delete_announce, confirm_delete_member, confirm_delete_user
-from photos.views import csv_upload, photoList, main, confirm_delete_data, userList, announce, inquiry, data_edit, export_page
+from photos.views import csv_upload, csv_automatch, photoList, main, confirm_delete_data, userList, announce, inquiry, data_edit, export_page
 from photos.views import data_upload, top3, group_profile, rank, guideline, grid, export_all_page, set_current, warn_overwrite, new_userinfo, no_group_notice
 from photos.views import reset_profile_group
 
@@ -33,6 +33,8 @@ urlpatterns = [
     url(r'^photos/(?P<pk>[0-9]+)/$', detail, name='detail'),
     url(r'^photos/csv_upload/$', csv_upload, name='csv_upload'),
     url(r'^photos/csv_upload/$', csv_upload, name='csv_upload'),
+    url(r'^photos/csv_automatch/$', csv_automatch, name='csv_automatch'),
+    url(r'^photos/csv_automatch/$', csv_automatch, name='csv_automatch'),
     path('photos/warn_overwrite/<int:year_pk>/<int:sem>', warn_overwrite, name='warn_overwrite'),
     url(r'^export_page/$', export_page, name='export_page'),
     url(r'^export_all_page/$', export_all_page, name='export_all_page'),
@@ -64,8 +66,10 @@ urlpatterns = [
     url(r'^upload_files/(?P<path>.*)$', serve,{'document_root': settings.MEDIA_ROOT}),
     url(r'^static/(?P<path>.*)$', serve,{'document_root': settings.STATIC_ROOT}),
     url(r'^photos/(?P<pk>[0-9]+)/edit', data_edit, name='edit'),
+    
+    # path('example/', include('example.urls')), #added by CS
 
-    path('recruit/', include('recruit.urls')),
+    path('recruit/', include('recruit.urls')), 
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

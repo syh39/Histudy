@@ -26,6 +26,7 @@ url(r'^admin/',                                                         admin.si
 url(r'^photos/(?P<pk>[0-9]+)/$',                                        detail,                                             name='detail'),
 url(r'^photos/csv_upload/$',                                            csv_upload,                                         name='csv_upload'),
 url(r'^photos/csv_upload/$',                                            csv_upload,                                         name='csv_upload'),
+url(r'^photos/csv_match/$',                                             csv_match,                                          name='csv_match'),
 path('photos/warn_overwrite/<int:year_pk>/<int:sem>',                   warn_overwrite,                                     name='warn_overwrite'),
 url(r'^export_page/$',                                                  export_page,                                        name='export_page'),
 url(r'^export_all_page/$',                                              export_all_page,                                    name='export_all_page'),
