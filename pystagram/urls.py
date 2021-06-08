@@ -68,8 +68,6 @@ urlpatterns = [
     url(r'^photos/(?P<pk>[0-9]+)/edit', data_edit, name='edit'),
     
     # path('example/', include('example.urls')), #added by CS
-
-    path('recruit/', include('recruit.urls')), 
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
