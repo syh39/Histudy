@@ -515,23 +515,24 @@ def csv_automatch(request):
                 sum = sum + row['counts']
             return num_ppl
 
-        def allocate_groups_dict(df_alone, groups, cannot_grouped, num_ppl) :
+        def allocate_groups_dict(df_search, groups, cannot_grouped, num_ppl) :
             idx = 0
             for num in num_ppl :
 
                 if num <= 2 :
                     for i in range(0, num):
-                        value = df_alone.iloc[idx: idx + 1]
+                        value = df_search.iloc[idx: idx + 1]
                         cannot_grouped.add(value['sid'].values[0])
                         idx += 1
 
                 else:
                     for i in range(0, num):
-                        value = df_alone.iloc[idx : idx + 1]
+                        value = df_search.iloc[idx : idx + 1]
                         lect = '{}_{}'.format(value['code_1'].values[0], value['prof_1'].values[0])
 
                         if lect not in groups.keys():
                             groups[lect] = set()
+
                         groups[lect].add(value['sid'].values[0])
 
                         idx += 1
@@ -591,7 +592,7 @@ def csv_automatch(request):
         uncompleted_groups = []
         cannot_grouped_friends = []
 
-        df_friends = df.loc[df['study_with'] != ''] # + 개인정보 동의한 사람들만
+        df_friends = df.loc[(df['study_with'].notnull()) & (df['study_with'] != '')] # + 개인정보 동의한 사람들만
         # df_friends['study_with'] = df_friends['study_with'].str.replace(" *[0-9()]*$", "", regex=True)
 
         private_groups = list()
@@ -707,23 +708,32 @@ def csv_automatch(request):
             allocate_groups_dict(df_targets[rest], grouped[rest], ungrouped[rest], num_ppl[rest])
 
             #remove allocated people
-            for d in grouped[rest].keys():
-                for j in grouped[rest][d]:
-                    for e in j :
-                        if e in ungrouped[preference]:
-                            ungrouped[preference].discard(e)
-                        if e in ungrouped['anything']:
-                            ungrouped['anything'].discard(e)
-            
+            for lect in grouped[rest].keys():
+                for j in grouped[rest][lect]:
+                    ungrouped[preference].discard(j)
+                    ungrouped['anything'].discard(j)
+
             for lect in grouped[rest].keys():
                 if lect not in grouped[preference].keys():
-                    grouped[preference][lect] = grouped[rest][lect]
+                    if len(grouped[rest][lect]) >= 3:
+                        grouped[preference][lect] = grouped[rest][lect]
+                    else:
+                        for each_sid in grouped['{}_rest'.format(preference)][lect]:
+                            ungrouped[preference_type[df.at[df[df['sid'] == each_sid].index[0], 'preference']]].add(each_sid)
+                            
+                        grouped[preference][lect] = set()
                 else:
                     grouped[preference][lect].update(grouped[rest][lect])
 
         # allocate rest people to other groups whose # of member is < 5
 
-        df_targets.update({'rest' : []})
+        for types in ('offline_rest', 'online_rest'):
+            for sid in ungrouped[types]:
+                # print(df.at[df[df['sid'] == sid].index[0], 'preference'])#, 'preference'])
+                ungrouped[preference_type[df.at[df[df['sid'] == sid].index[0], 'preference']]].add(sid)
+            ungrouped.pop(types, None)
+
+        # df_targets.update({'rest' : []})
 
         for code in ('code_1', 'code_2', 'code_3'):
             df_targets['rest'] = df_alone[df_alone['sid'].isin(ungrouped['offline'].union(ungrouped['online']).union(ungrouped['anything']))]
@@ -734,61 +744,39 @@ def csv_automatch(request):
         df_targets['rest'] = df_targets['rest'].sort_values(['code_1', 'prof_1'], ascending = True).reset_index(drop = True)
 
 
-
-        # print()
-        # print("------ 최종 ------ ")
-        # print("offline")
-        # sum = 0
-        # for e in grouped['offline'].keys(): # rest 랑 합침
-        #     sum += len(grouped['offline'][e])
-        # print(sum)
-
-        # print("online")
-        # sum = 0
-        # for e in grouped['online']:  # rest 랑 합침
-        #     sum += len(grouped['online'][e])
-        # print(sum)
-
-        # sum = 0
-        # print("anything")
-        # for e in grouped['anything']:
-        #     sum += len(grouped['anything'][e])
-        # print(sum)
-
-
-        # print("——할당 안받은 사람——")
-        # print(ungrouped['offline'])
-        # print(ungrouped['online'])
-        # print(ungrouped['anything'])
-        # print(len(ungrouped['offline'].union(ungrouped['online']).union(ungrouped['anything'])))
-        # print()
-
-
         # (option) 5. 3명 그룹 -> 줄이기
 
         # 6. 인원 수에 맞춰서 그룹 번호 매기기
         # group_num = 1
+
+        df.insert(9, 'match_code', ['' for _ in range(len(df))], True)
         for preference in preference_type.values():
             for code, student_id_lst in grouped[preference].items():
 
                 n = len(student_id_lst)
 
-                group_numbers = []
                 if n < 11:
                     group_numbers = [[3], [4], [5], [3, 3], [4, 3], [4, 4], [5, 4], [5, 5]][n - 3]
                 else:
                     group_numbers = [[4, 4], [4, 4], [5, 4], [5, 5]][n % 4 - 3] + ([4] * (((n + 1) // 4) - 3)) + ([3] if n % 4 == 3 else [4])
 
+                # print(code, student_id_lst)
+                # print(group_numbers)
+
+                cnt = [0, 0]
                 for sid in student_id_lst:
                     df.at[df['sid'] == sid, 'group'] = group_num
+                    df.at[df['sid'] == sid, 'match_code'] = code
+                    # print(sid, group_num)
+                    cnt[1] += 1
 
-                    group_numbers[0] -= 1
-                    if group_numbers[0] == 0:
-                        del group_numbers[0]
+                    if cnt[1] == group_numbers[cnt[0]]:
+                        cnt[0] += 1
+                        cnt[1] = 0
                         group_num += 1
 
         # 7. result.csv 파일로 저장
-        df = df.sort_values('group', ascending=True).reset_index(drop=True)
+        df = df.sort_values(['group', 'timestamp'], ascending = [True, True]).reset_index(drop=True)
         df.to_csv("/home/dietrich/Histudy/result.csv",  float_format='%.f', index = False, encoding = 'EUC-KR')
 
         # Algorithm embedding ended
